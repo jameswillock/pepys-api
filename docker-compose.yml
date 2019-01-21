@@ -1,0 +1,39 @@
+version: '3.7'
+services:
+  db:
+    image: postgres:11.1-alpine
+    volumes:
+      - db:/var/lib/postgresql/data
+    env_file:
+      - .env
+  redis:
+    image: redis:5.0-alpine
+    command: redis-server
+    volumes:
+      - redis:/data
+    env_file:
+      - .env
+  web:
+    depends_on:
+      - db
+      - redis
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+  sidekiq:
+    depends_on:
+      - db
+      - redis
+    build: .
+    command: bundle exec sidekiq 
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+volumes:
+  redis:
+  db:
