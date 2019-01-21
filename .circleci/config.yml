@@ -3,55 +3,48 @@ jobs:
   build:
     parallelism: 2
     docker:
-      - image: circleci/ruby:2.6.0-jessie-node
+      - image: circleci/ruby:2.6.0
         environment:
-          BUNDLE_JOBS: 3
-          BUNDLE_RETRY: 3
-          BUNDLE_PATH: vendor/bundle
           PGHOST: 127.0.0.1
           PGUSER: pepys-api
           RAILS_ENV: test
+          DATABASE_URL: "postgres://pepys-api:@127.0.0.1:5432/pepys-api_test"
       - image: circleci/postgres:11.1-alpine
         environment:
           POSTGRES_USER: pepys-api
-          POSTGRES_DB: pepys-api_development
+          POSTGRES_DB: pepys-api_test
           POSTGRES_PASSWORD: ""
+    working_directory: ~/pepys-api
     steps:
       - checkout
 
-      # Which version of bundler?
-      - run:
-          name: Which bundler?
-          command: bundle -v
-
-      # Restore bundle cache
       - restore_cache:
           keys:
-            - pepys-api-bundle-v2-{{ checksum "Gemfile.lock" }}
-            - pepys-api-bundle-v2-
+            - v1-dependencies-{{ checksum "Gemfile.lock" }}
+            - v1-dependencies-
 
       - run:
-          name: Bundle Install
-          command: bundle check || bundle install
+          name: Install dependencies
+          command: bundle install --jobs=4 --retry=3 --path vendor/bundle
 
       # Store bundle cache
       - save_cache:
-          key: pepys-api-bundle-v2-{{ checksum "Gemfile.lock" }}
           paths:
-            - vendor/bundle
+            - ./vendor/bundle
+          key: v1-dependencies-{{ checksum "Gemfile.lock" }}
 
       - run:
-          name: Wait for DB
+          name: Wait for database
           command: dockerize -wait tcp://localhost:5432 -timeout 1m
 
       - run:
           name: Database setup
-          command: bin/rails db:schema:load --trace
+          command: bin/rails db:create db:schema:load --trace
 
       # Run rspec in parallel
       - run:
-          name: Run rspec in parallel
-          command: bin/rails test
+          name: Run tests
+          command: bundle exec rake test
 
       # Save test results for timing analysis
       - store_test_results:
