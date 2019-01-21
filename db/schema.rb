@@ -16,10 +16,11 @@ ActiveRecord::Schema.define(version: 2019_01_21_145424) do
   enable_extension "plpgsql"
 
   create_table "diary_entries", force: :cascade do |t|
-    t.datetime "published_on", null: false
+    t.date "published_on", null: false
     t.text "text", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["published_on"], name: "index_diary_entries_on_published_on"
   end
 
 end

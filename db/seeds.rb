@@ -5,3 +5,18 @@
 #
 #   movies = Movie.create([{ name: 'Star Wars' }, { name: 'Lord of the Rings' }])
 #   Character.create(name: 'Luke', movie: movies.first)
+
+# Load entries fixtures from JSON
+entries = JSON.load(
+  File.new(
+    Rails.root.join("db", "entries.json")
+  )
+)
+
+# Create record for each entry
+entries["entries"].each do |entry|
+  DiaryEntry.create!(
+    published_on: Date.parse(entry["date"]),
+    text: entry["content"]
+  )
+end
